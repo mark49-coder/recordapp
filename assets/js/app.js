@@ -8,6 +8,9 @@ function saveTask(newTask) {
   // Save the updated array back to Local Storage
   localStorage.setItem('recordapp_tasks', JSON.stringify(tasks));
 
+import { initCalendar } from '../../js/modules/calendarHandler.js';
+import { addTask } from '../../js/modules/taskHandler.js';
+
   // Redirect to home page
   window.location.href = 'index.html';
 }
@@ -23,33 +26,69 @@ function handleNewTaskForm() {
   if (taskInput && saveButton) {
     const form = saveButton.closest('form'); // Assuming the button is inside a form
 
-    if (form) {
-      form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const taskText = taskInput.value.trim();
-        if (taskText) {
-          const task = {
-            id: Date.now(),
-            text: taskText,
-            completed: false
-          };
-          saveTask(task);
+    const handleSubmit = function(event) {
+      event.preventDefault();
+      const title = taskInput.value.trim();
+
+      const notesElement = document.querySelector('textarea[placeholder="Notes"]');
+      const notes = notesElement ? notesElement.value.trim() : '';
+
+      // More robust selector for time: find h3 with "Time", go to parent, then find select.
+      // This is still a bit fragile if DOM structure changes drastically.
+      let time = '';
+      const timeHeading = Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent.trim() === 'Time');
+      if (timeHeading) {
+          const timeSelect = timeHeading.nextElementSibling.querySelector('select.form-input');
+          if (timeSelect) {
+              time = timeSelect.value;
+          } else {
+              console.warn("Time select element not found near 'Time' heading.");
+          }
+      } else {
+          console.warn("'Time' heading not found.");
+      }
+
+      let frequency = '';
+      // The radio button name "3af51c08-8cc7-4b6e-a7cb-5d8621cf8474" seems very specific and might be dynamically generated.
+      // A more general approach would be to find the "Frequency" h3 and then the radio inputs within its container.
+      // For now, assuming the name is stable or another selector method is used.
+      // If the name is dynamic, this part would need adjustment.
+      // Let's try to find radios within the "Frequency" section as a more robust way.
+      const frequencyHeading = Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent.trim() === 'Frequency');
+      if (frequencyHeading) {
+        const frequencyContainer = frequencyHeading.nextElementSibling; // Assuming inputs are in the next sibling container
+        if (frequencyContainer) {
+          const checkedRadio = frequencyContainer.querySelector('input[type="radio"]:checked');
+          if (checkedRadio && checkedRadio.parentElement && checkedRadio.parentElement.tagName === 'LABEL') {
+            // Iterate over childNodes to find the text node, ignoring the input itself
+            for (const childNode of checkedRadio.parentElement.childNodes) {
+                if (childNode.nodeType === Node.TEXT_NODE && childNode.nodeValue.trim()) {
+                    frequency = childNode.nodeValue.trim();
+                    break;
+                }
+            }
+          } else {
+            console.warn("Checked frequency radio or its label not found.");
+          }
+        } else {
+            console.warn("Frequency container not found near 'Frequency' heading.");
         }
-      });
+      } else {
+          console.warn("'Frequency' heading not found.");
+      }
+
+
+      if (title) {
+        const returnedTaskObject = addTask(title, notes, time, frequency);
+        saveTask(returnedTaskObject); // saveTask handles redirection
+      }
+    };
+
+    if (form) {
+      form.addEventListener('submit', handleSubmit);
     } else {
       // Fallback if no form element is found, listen to button click
-      saveButton.addEventListener('click', function(event) {
-        event.preventDefault();
-        const taskText = taskInput.value.trim();
-        if (taskText) {
-          const task = {
-            id: Date.now(),
-            text: taskText,
-            completed: false
-          };
-          saveTask(task);
-        }
-      });
+      saveButton.addEventListener('click', handleSubmit);
     }
   }
 }
@@ -158,6 +197,9 @@ function renderNavbar() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+    initCalendar();
+  }
   handleNewTaskForm();
   loadTasks();
   renderNavbar();

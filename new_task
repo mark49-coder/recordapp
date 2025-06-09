@@ -89,6 +89,7 @@
         <div class="h-5 bg-[#fcf9f8]"></div>
       </div>
     </div>
-    <script src="../assets/js/app.js"></script>
+    <script src="../../js/modules/taskHandler.js"></script>
+    <script type="module" src="../assets/js/app.js"></script>
   </body>
 </html>
