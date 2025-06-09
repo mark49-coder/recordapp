@@ -93,6 +93,42 @@ function handleNewTaskForm() {
   }
 }
 
+function handleTaskCheckboxChange(event) {
+    const checkbox = event.target;
+    const taskId = checkbox.dataset.taskId; // Assuming 'data-task-id' is on the checkbox
+    const isCompleted = checkbox.checked;
+
+    if (!taskId) {
+        console.error("Task ID not found on checkbox.");
+        return;
+    }
+
+    let tasks = JSON.parse(localStorage.getItem('recordapp_tasks')) || [];
+    const taskIndex = tasks.findIndex(task => task.id == taskId); // Use '==' for string/number comparison
+
+    if (taskIndex === -1) {
+        console.error("Task not found in Local Storage:", taskId);
+        return;
+    }
+
+    tasks[taskIndex].completed = isCompleted;
+    localStorage.setItem('recordapp_tasks', JSON.stringify(tasks));
+
+    const taskTextElement = checkbox.closest('.flex.items-center.gap-4').querySelector('p.text-base');
+
+    if (taskTextElement) {
+        if (isCompleted) {
+            taskTextElement.classList.add('line-through', 'text-[#a15f45]');
+        } else {
+            taskTextElement.classList.remove('line-through', 'text-[#a15f45]');
+        }
+    } else {
+        console.warn("Could not find task text element to update style for task ID:", taskId);
+    }
+
+    // console.log(`Task ${taskId} marked as ${isCompleted ? 'complete' : 'incomplete'}`);
+}
+
 function loadTasks() {
   if (!(window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/index.html'))) {
     return;
@@ -148,6 +184,11 @@ function loadTasks() {
       <p class="text-[#1d110c] text-base font-normal leading-normal flex-1 truncate ${task.completed ? 'line-through text-[#a15f45]' : ''}">${task.text}</p>
     `;
     tasksContainer.appendChild(taskElement);
+
+    const checkbox = taskElement.querySelector('input[type="checkbox"]');
+    if (checkbox) {
+        checkbox.addEventListener('change', handleTaskCheckboxChange); // handleTaskCheckboxChange will be defined later
+    }
   });
 }
 
