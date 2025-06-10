@@ -10,6 +10,7 @@ function saveTask(newTask) {
 
 import { initCalendar } from '../../js/modules/calendarHandler.js';
 import { addTask } from '../../js/modules/taskHandler.js';
+import { updatePetPoints, getPetPoints } from '../../js/modules/petGamification.js';
 
   // Redirect to home page
   window.location.href = 'index.html';
@@ -95,7 +96,7 @@ function handleNewTaskForm() {
 
 function handleTaskCheckboxChange(event) {
     const checkbox = event.target;
-    const taskId = checkbox.dataset.taskId; // Assuming 'data-task-id' is on the checkbox
+    const taskId = checkbox.dataset.taskId;
     const isCompleted = checkbox.checked;
 
     if (!taskId) {
@@ -104,18 +105,20 @@ function handleTaskCheckboxChange(event) {
     }
 
     let tasks = JSON.parse(localStorage.getItem('recordapp_tasks')) || [];
-    const taskIndex = tasks.findIndex(task => task.id == taskId); // Use '==' for string/number comparison
+    const taskIndex = tasks.findIndex(task => task.id == taskId);
 
     if (taskIndex === -1) {
         console.error("Task not found in Local Storage:", taskId);
         return;
     }
 
+    // Only update points if the task was not already completed and is now being marked complete.
+    // This prevents earning points multiple times for the same task or when unchecking.
+    const wasCompleted = tasks[taskIndex].completed;
     tasks[taskIndex].completed = isCompleted;
     localStorage.setItem('recordapp_tasks', JSON.stringify(tasks));
 
     const taskTextElement = checkbox.closest('.flex.items-center.gap-4').querySelector('p.text-base');
-
     if (taskTextElement) {
         if (isCompleted) {
             taskTextElement.classList.add('line-through', 'text-[#a15f45]');
@@ -126,7 +129,82 @@ function handleTaskCheckboxChange(event) {
         console.warn("Could not find task text element to update style for task ID:", taskId);
     }
 
-    // console.log(`Task ${taskId} marked as ${isCompleted ? 'complete' : 'incomplete'}`);
+    if (isCompleted && !wasCompleted) { // Task just marked as complete
+        updatePetPoints(10); // Award 10 points
+        displayPetPointsInUI(); // Update UI (function to be defined next)
+    } else if (!isCompleted && wasCompleted) { // Task marked as incomplete
+        // Optional: Deduct points or handle this case if needed. For now, only awarding.
+        // updatePetPoints(-10); // Example if deducting points
+        // displayPetPointsInUI(); // Update UI if points changed
+    }
+}
+
+function initPetPageButtons() {
+    if (!window.location.pathname.endsWith('pets')) {
+        return; // Only run on pets page
+    }
+
+    // Find buttons by their text content within specific structure
+    const buttonsContainer = document.querySelector('.flex.flex-1.gap-3.flex-wrap.max-w-\\[480px\\].justify-center');
+    if (!buttonsContainer) {
+        // console.warn("Pets page buttons container not found.");
+        return;
+    }
+
+    const playButton = Array.from(buttonsContainer.querySelectorAll('button span.truncate'))
+                           .find(span => span.textContent.trim() === 'Play')?.parentElement;
+    const shopButton = Array.from(buttonsContainer.querySelectorAll('button span.truncate'))
+                           .find(span => span.textContent.trim() === 'Shop')?.parentElement;
+
+    if (playButton) {
+        playButton.addEventListener('click', () => {
+            console.log("Play button clicked");
+        });
+    } else {
+        console.warn("Play button not found on pets page.");
+    }
+
+    if (shopButton) {
+        shopButton.addEventListener('click', () => {
+            console.log("Shop button clicked");
+        });
+    } else {
+        console.warn("Shop button not found on pets page.");
+    }
+}
+
+function displayPetPointsInUI() {
+    const points = getPetPoints(); // Assumes getPetPoints is imported from petGamification.js
+
+    // Update points in index.html (paw icon points)
+    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+        const pawIconContainer = document.querySelector('div[data-icon="PawPrint"]');
+        if (pawIconContainer) {
+            const pointsDisplayElement = pawIconContainer.closest('div.flex.w-12.items-center.justify-end').querySelector('p.shrink-0');
+            if (pointsDisplayElement) {
+                pointsDisplayElement.textContent = points;
+            } else {
+                console.warn("Paw points display element not found in index.html.");
+            }
+        } else {
+             // console.warn("Paw icon container not found in index.html, can't update points display.");
+        }
+    }
+
+    // Update points in pets.html (Total Points display)
+    if (window.location.pathname.endsWith('pets')) {
+        const totalPointsLabel = Array.from(document.querySelectorAll('p')).find(p => p.textContent === 'Total Points');
+        if (totalPointsLabel) {
+            const pointsDisplayElement = totalPointsLabel.nextElementSibling;
+             if (pointsDisplayElement && pointsDisplayElement.classList.contains('text-2xl')) {
+                pointsDisplayElement.textContent = points;
+            } else {
+                console.warn("Total points value element not found or is not the expected element in pets.html.");
+            }
+        } else {
+            console.warn("'Total Points' label not found in pets.html.");
+        }
+    }
 }
 
 function loadTasks() {
@@ -241,7 +319,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
     initCalendar();
   }
-  handleNewTaskForm();
-  loadTasks();
-  renderNavbar();
+  handleNewTaskForm(); // Checks its own page context
+  loadTasks();         // Checks its own page context (index.html)
+  renderNavbar();      // Checks its own page context (not new_task)
+  displayPetPointsInUI(); // Checks its own page context (index.html, pets)
+  initPetPageButtons(); // Add this call, it will check its own page context (pets)
 });

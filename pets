@@ -62,7 +62,7 @@
         <div class="h-5 bg-[#fcf9f8]"></div>
       </div>
     </div>
-    <script src="../assets/js/app.js"></script>
+    <script type="module" src="../assets/js/app.js"></script>
     <div id="bottom-navbar-container"></div>
   </body>
 </html>
