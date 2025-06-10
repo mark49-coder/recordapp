@@ -11,6 +11,7 @@ function saveTask(newTask) {
 import { initCalendar } from '../../js/modules/calendarHandler.js';
 import { addTask } from '../../js/modules/taskHandler.js';
 import { updatePetPoints, getPetPoints } from '../../js/modules/petGamification.js';
+import { renderStats } from '../../js/modules/statsDisplay.js';
 
   // Redirect to home page
   window.location.href = 'index.html';
@@ -323,5 +324,9 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTasks();         // Checks its own page context (index.html)
   renderNavbar();      // Checks its own page context (not new_task)
   displayPetPointsInUI(); // Checks its own page context (index.html, pets)
-  initPetPageButtons(); // Add this call, it will check its own page context (pets)
+  initPetPageButtons(); // Checks its own page context (pets)
+
+  if (window.location.pathname.endsWith('stats')) {
+    renderStats();
+  }
 });
