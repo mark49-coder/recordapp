@@ -132,11 +132,38 @@ function handleTaskCheckboxChange(event) {
 
     if (isCompleted && !wasCompleted) { // Task just marked as complete
         updatePetPoints(10); // Award 10 points
-        displayPetPointsInUI(); // Update UI (function to be defined next)
+        displayPetPointsInUI();
+        localStorage.setItem('pet_needs_to_react', 'true'); // Set flag for pet reaction
     } else if (!isCompleted && wasCompleted) { // Task marked as incomplete
         // Optional: Deduct points or handle this case if needed. For now, only awarding.
         // updatePetPoints(-10); // Example if deducting points
         // displayPetPointsInUI(); // Update UI if points changed
+    }
+}
+
+function triggerPetReaction() {
+    if (!window.location.pathname.endsWith('pets')) {
+        return; // Only run on pets page
+    }
+
+    if (localStorage.getItem('pet_needs_to_react') === 'true') {
+        const petImageElement = document.querySelector('.flex.w-full.grow.bg-\\[#fcf9f8\\].\\@container.p-4 .w-full.bg-center.bg-no-repeat.bg-cover');
+
+        if (petImageElement) {
+            console.log("Pet is reacting!"); // Placeholder for animation
+            // Add CSS class for animation
+            petImageElement.classList.add('pet-reaction-bounce');
+
+            // Remove the class after animation completes to allow re-trigger
+            setTimeout(() => {
+                petImageElement.classList.remove('pet-reaction-bounce');
+            }, 500); // Duration of the bounce animation is 0.5s
+
+            localStorage.removeItem('pet_needs_to_react'); // Clear the flag
+        } else {
+            console.warn("Pet image element not found on pets page for reaction.");
+            localStorage.removeItem('pet_needs_to_react'); // Still remove flag if element not found to prevent stale state
+        }
     }
 }
 
@@ -329,4 +356,5 @@ document.addEventListener('DOMContentLoaded', function() {
   if (window.location.pathname.endsWith('stats')) {
     renderStats();
   }
+  triggerPetReaction(); // Checks its own page context (pets)
 });
